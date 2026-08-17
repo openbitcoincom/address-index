@@ -19,7 +19,8 @@
 # node's own coinstatsindex figures for the snapshot height before anything
 # is written. A desynced parse can therefore never reach the public table.
 #
-# Run from cron (daily in production); needs to invoke bitcoin-cli as the
+# Run from the rich-list.timer systemd timer (daily in production; the box
+# runs no cron daemon); needs to invoke bitcoin-cli as the
 # bitcoin user (dumptxoutset is not on the web RPC whitelist) and read access
 # to /etc/openbitcoin/*.env.
 #
