@@ -80,10 +80,22 @@ AUTH_HDR = 'Basic ' + base64.b64encode(
 def rpc(method, params=None):
     body = json.dumps({'jsonrpc': '1.0', 'id': 'rl', 'method': method,
                        'params': params or []}).encode()
-    req = urllib.request.Request(RPC_URL, data=body, headers={
-        'Content-Type': 'application/json', 'Authorization': AUTH_HDR})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        out = json.loads(r.read())
+    # bitcoind answers HTTP 503 when its RPC work queue is momentarily full,
+    # which is transient by definition; without the retry a single 503 in the
+    # block-dates loop killed whole runs minutes from the finish line
+    # (2026-08-16 and 2026-08-19, both at the ~03:55 contention peak)
+    for attempt in range(6):
+        req = urllib.request.Request(RPC_URL, data=body, headers={
+            'Content-Type': 'application/json', 'Authorization': AUTH_HDR})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                out = json.loads(r.read())
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 503 and attempt < 5:
+                time.sleep(0.5 * (2 ** attempt))
+                continue
+            raise
     if out.get('error'):
         raise RuntimeError(f"{method}: {out['error']}")
     return out['result']
