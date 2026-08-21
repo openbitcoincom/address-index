@@ -201,4 +201,4 @@ Rich list:
 
 ## License
 
-MIT.
+MIT. The OpenBitcoin name and logo are not part of the license.
